@@ -1,0 +1,1 @@
+python train.py --dataset-train "YOUR-DATASET-PATH" --epochs 50 --batch-size 32 --test-batch-size 8 --add-noise --noise-level 25  --lr 0.001 --lr-schedule '[[0,1],[20,0.1],[40,0.01]]' --de-kernel-size 7 --en-kernel-size 7 --numfilter-list 1 32 64  
