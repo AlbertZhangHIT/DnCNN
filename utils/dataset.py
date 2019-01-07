@@ -37,15 +37,18 @@ class DatasetFromH5PY(udata.Dataset):
 		if label == None:
 			if self.transform is not None:
 				sample = self.transform(sample)
-				sample = sample.unsqueeze(0) if sample.dim() < 3
+				if sample.dim() < 3:
+					sample = sample.unsqueeze(0) 
 			return sample
 		else:
 			if self.transform is not None:
 				sample = self.transform(sample)
-				sample = sample.unsqueeze(0) if sample.dim() < 3
+				if sample.dim() < 3:
+					sample = sample.unsqueeze(0) 
 			if self.target_transform is not None:
 				label = self.target_transform(label)
-				label = label.unsqueeze(0) if label.dim() < 3		
+				if label.dim() < 3:
+					label = label.unsqueeze(0) 		
 			return sample, label
 
 class DatasetFromH5PYOne(udata.Dataset):

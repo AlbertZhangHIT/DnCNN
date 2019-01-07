@@ -67,7 +67,7 @@ if os.path.isdir(args.dataset) and args.imgfile:
 		
 if os.path.isfile(args.dataset) and not args.imgfile:
 	try:
-		test_set = DatasetFromH5PY(args.dataset, mtf.ToTensor(), mtf.ToTensor())
+		test_set = DatasetFromH5PY(args.dataset, mtf.ToTensor(), mtf.ToTensor(255))
 	except:
 		print("Only files in .h5 format are supported.")
 

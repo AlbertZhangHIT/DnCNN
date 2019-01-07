@@ -89,10 +89,8 @@ def train(epoch, ttot):
 		# unpack the data if needed.
 		try:
 			x, y = data
-			x, y = x.unsqueeze(dim=1), y.unsqueeze(dim=1)
 		except ValueError:
 			y = data
-			y = y.unsqueeze(dim=1)
 			if args.add_noise:
 				if args.blind:
 					noise = torch.zeros(y.size())
@@ -123,7 +121,6 @@ def train(epoch, ttot):
 		if args.clip_grad:
 			nn.utils.clip_grad_norm_(model.parameters(), args.clipping)
 		optimizer.step()
-		lambdClip(model)
 
 		# measure performance and record loss
 		model.eval()

@@ -77,3 +77,9 @@ def loadModel(net, device, file):
 		net.load_state_dict(new_state_dict)
 
 	return net
+
+def countParam(net):
+	count = 0
+	for p in net.parameters():
+		count += p.data.nelement()
+	return count
