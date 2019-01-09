@@ -31,11 +31,11 @@ class DnCNN(nn.Module):
 		self.image_channels = image_channels
 
 		self.dncnn = self._make_layers()
+		self._initialize_weights()
 
 	def forward(self, x):
-		y = x
 		out = self.dncnn(x)
-		return y - out
+		return x - out
 
 	def _make_layers(self):
 		layers = []
