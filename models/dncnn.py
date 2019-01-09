@@ -34,8 +34,9 @@ class DnCNN(nn.Module):
 		self._initialize_weights()
 
 	def forward(self, x):
+		y = x
 		out = self.dncnn(x)
-		return x - out
+		return y - out
 
 	def _make_layers(self):
 		layers = []
