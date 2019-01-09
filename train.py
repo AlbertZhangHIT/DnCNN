@@ -16,6 +16,7 @@ from torch.utils.data import DataLoader, random_split
 import _helpers as helpers
 from _parsers import parser
 import utils.mytransform as mtf
+import utils.visual as visual
 from utils.dataset import DatasetFromH5PY
 from utils.measure import batch_PSNR, batch_SNR
 from utils.meter import AverageMeter
@@ -60,7 +61,7 @@ training_logger, testing_logger = helpers.loggers(args)
 model = DnCNN(args.depth, args.n_channels, args.img_channels, args.kernel_size)
 
 # Loss function and regularizers
-criterion = nn.MSELoss()
+criterion = nn.MSELoss(size_average=False)
 
 # Move to device
 criterion = criterion.to(device)
@@ -81,7 +82,7 @@ def train(epoch, ttot):
 	# Run through the training data
 	if args.has_cuda:
 		torch.cuda.synchronize()
-	tepoch = time.perf_counter()
+	tepoch = time.time()
 	el_loss = AverageMeter()
 	el_measure = AverageMeter()
 	data_stream = tqdm(enumerate(train_loader, 1))
@@ -112,7 +113,7 @@ def train(epoch, ttot):
 
 		optimizer.zero_grad()
 		y_hat = model(x)
-		loss = criterion(y_hat, y)
+		loss = criterion(y_hat, y) / (x.size()[0]*2)
 
 		if np.isnan(loss.data.item()):
 			raise(TrainError('model returned nan during training'))
@@ -149,10 +150,27 @@ def train(epoch, ttot):
 			mvalue=el_measure,
 		))
 
-		if args.log_dir is not None:
+		if args.log_dir is not None and iteration % args.log_interval == 0:
 			training_logger(el_loss.avg, optimizer, tepoch, ttot)
+			if args.visualize: # send losses and sample images to the visdom server
+				visual.visualize_scalar(
+					loss.data.item(),
+					'Loss',
+					iteration=iteration,
+					env='Train'
+				)
+				visual.visualize_images(
+					x.data*255,
+					'Noisy Images',
+					env='Train'
+				)
+				visual.visualize_images(
+					y_tilde.data*255,
+					'Denoised Images',
+					env='Train'
+				)
 
-	return ttot + time.perf_counter() - tepoch
+	return ttot + time.time() - tepoch
 
 def test(epoch, ttot):
 	model.eval()
@@ -163,10 +181,8 @@ def test(epoch, ttot):
 			# unpack the data if needed.
 			try:
 				x, y = data
-				x, y = x.unsqueeze(dim=1), y.unsqueeze(dim=1)
 			except ValueError:
 				y = data
-				y = y.unsqueeze(dim=1)
 				if args.add_noise:
 					if args.blind:
 						noise = torch.zeros(y.size())
@@ -191,9 +207,25 @@ def test(epoch, ttot):
 			test_loss.update(loss.data.item(), y.size(0))
 			test_measure.update(l_measure, y.size(0))
 			# Report results
-			if args.log_dir is not None:
+			if args.log_dir is not None and iteration % args.log_interval == 0:
 				testing_logger(epoch, test_loss.avg, test_measure.avg, optimizer)
-
+				if args.visualize: # send losses and sample images to the visdom server
+					visual.visualize_scalar(
+						loss.data.item(),
+						'Loss',
+						iteration=iteration,
+						env='Test'
+					)
+					visual.visualize_images(
+						x.data*255,
+						'Noisy Images',
+						env='Test'
+					)
+					visual.visualize_images(
+						y_tilde.data*255,
+						'Denoised Images',
+						env='Test'
+					)
 	print('[Epoch %2d] Average test loss: %.3f, Average test %s: %.3f'
 		%(epoch, test_loss.avg, 'SNR' if args.snr else 'PSNR', test_measure.avg))
 

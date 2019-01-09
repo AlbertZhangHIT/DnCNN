@@ -20,6 +20,8 @@ parser.add_argument('--noise-level', type=float, default=0,
     help='noise level')
 parser.add_argument('--snr', action='store_true', 
     help='measure performance, default psnr otherwise snr')
+parser.add_argument('--visualize', action='store_true',
+	help='Visualize the training process')
 
 group0 = parser.add_argument_group('Optimizer hyperparameters')
 group0.add_argument('--batch-size', type=int, default=16, 
