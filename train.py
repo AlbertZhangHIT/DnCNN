@@ -78,7 +78,6 @@ class TrainError(Exception):
 	pass
 
 def train(epoch, ttot):
-	model.train()
 	# Run through the training data
 	if args.has_cuda:
 		torch.cuda.synchronize()
@@ -87,6 +86,7 @@ def train(epoch, ttot):
 	el_measure = AverageMeter()
 	data_stream = tqdm(enumerate(train_loader, 1))
 	for batch_idx, data in data_stream:
+		model.train()
 		# unpack the data if needed.
 		try:
 			x, y = data
@@ -114,6 +114,7 @@ def train(epoch, ttot):
 		optimizer.zero_grad()
 		y_hat = model(x)
 		loss = criterion(y_hat, y) / (x.size()[0]*2)
+
 
 		if np.isnan(loss.data.item()):
 			raise(TrainError('model returned nan during training'))
@@ -202,6 +203,7 @@ def test(epoch, ttot):
 			x, y = x.to(device), y.to(device)
 			y_tilde = model(x)
 			loss = criterion(y_tilde, y)
+
 			y_tilde = torch.clamp(y_tilde, 0., 1.)
 			l_measure = batch_SNR(y_tilde, y, 1.) if args.snr else batch_PSNR(y_tilde, y, 1.)
 			test_loss.update(loss.data.item(), y.size(0))
