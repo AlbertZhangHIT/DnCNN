@@ -79,7 +79,7 @@ class ToTensor(object):
 		return torch.from_numpy(x).float()/self.division
 
 class Normalize(object):
-	"""Normalize the tensor
+	"""Normalize the tensor to [0, 1]
 	Args:
 		dim: expected dimention indexes on which 
 			normalization performs
@@ -90,8 +90,9 @@ class Normalize(object):
 	def __call__(self, x):
 		ndim = x.dim()
 		if self.dim is None:
-			maxValue = x.abs().max()
-			return x / maxValue
+			minValue = x.min()
+			maxValue = x.max()
+			return (x - minValue) / (maxValue - minValue + 1e-30)
 		else:
 			y = x
 			dims = _ntuple(ndim)(self.dim)
@@ -99,7 +100,9 @@ class Normalize(object):
 				if dim in dims:
 					maxValue, _ = x.abs().max(dim=dim, keepdim=True)
 					y = y.div(maxValue.expand_as(y))
-			return y
+			minValue = y.min()
+			maxValue = y.max()
+			return (y - minValue)/(maxValue - minValue + 1e-30)
 					
 
 
