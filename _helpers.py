@@ -51,3 +51,27 @@ def loggers(args):
                     file=testing_log, flush=True)
 
     return training_logger(), testing_logger()
+
+
+def loadModel(net, device, file):
+    checkpoint = torch.load(file)['state_dict']
+    if device == 'cuda':
+        device_ids = [0]
+        net = nn.DataParallel(net, device_ids=device_ids)
+        cudnn.benchmark = True
+        net.load_state_dict(checkpoint)
+    else:
+        from collections import OrderedDict
+        new_state_dict = OrderedDict()
+        for k, v in checkpoint.items():
+            name = k[7:]
+            new_state_dict[name] = v
+        net.load_state_dict(new_state_dict)
+
+    return net
+
+def countParam(net):
+    count = 0
+    for p in net.parameters():
+        count += p.data.nelement()
+    return count
