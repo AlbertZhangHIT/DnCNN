@@ -113,7 +113,7 @@ def train(epoch, ttot):
 
 		optimizer.zero_grad()
 		y_hat = model(x)
-		loss = criterion(y_hat, y) / (x.size()[0]*2)
+		loss = criterion(y_hat, y) / (x.size(0)*2)
 
 
 		if np.isnan(loss.data.item()):
@@ -202,7 +202,7 @@ def test(epoch, ttot):
 
 			x, y = x.to(device), y.to(device)
 			y_tilde = model(x)
-			loss = criterion(y_tilde, y)
+			loss = criterion(y_tilde, y) / (x.size(0)*2)
 
 			y_tilde = torch.clamp(y_tilde, 0., 1.)
 			l_measure = batch_SNR(y_tilde, y, 1.) if args.snr else batch_PSNR(y_tilde, y, 1.)
