@@ -5,6 +5,7 @@ import bisect
 import numpy as np
 from torch.optim.lr_scheduler import LambdaLR
 import torch.nn as nn
+import torch
 
 def scheduler(optimizer,args):
     """Return a hyperparmeter scheduler for the optimizer"""
@@ -53,12 +54,11 @@ def loggers(args):
     return training_logger(), testing_logger()
 
 
-def loadModel(net, device, file):
+def loadModel(net, device, file, deviceIds=[0], parallel=False):
     checkpoint = torch.load(file)['state_dict']
     if device == 'cuda':
-        device_ids = [0]
-        net = nn.DataParallel(net, device_ids=device_ids)
-        cudnn.benchmark = True
+        if parallel:
+            net = nn.DataPrallel(net, device_ids=deviceIds)
         net.load_state_dict(checkpoint)
     else:
         from collections import OrderedDict
@@ -75,3 +75,13 @@ def countParam(net):
     for p in net.parameters():
         count += p.data.nelement()
     return count
+
+def weights_init_kaiming(m):
+    classname = m.__class__.__name__
+    if classname.find('Conv') != -1:
+        nn.init.kaiming_normal_(m.weight.data, a=0, mode='fan_in')
+    elif classname.find('Linear') != -1:
+        nn.init.kaiming_normal_(m.weight.data, a=0, mode='fan_in')
+    elif classname.find('BatchNorm') != -1:
+        m.weight.data.normal_(mean=0, std=math.sqrt(2./9./64.)).clamp_(-0.025,0.025)
+        nn.init.constant_(m.bias.data, 0.0)

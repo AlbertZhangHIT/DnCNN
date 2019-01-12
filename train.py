@@ -23,8 +23,7 @@ from utils.meter import AverageMeter
 from models import *
 from loss import *
 
-#os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-#os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+
 
 blind_noise = [0, 55]
 args = parser.parse_args()
@@ -59,7 +58,7 @@ print("Train Samples: %d, Validate Samples: %d"%(len(data_set)-numValSamples, nu
 training_logger, testing_logger = helpers.loggers(args)
 # Initialize model
 model = DnCNN(args.depth, args.n_channels, args.img_channels, args.kernel_size)
-
+model.apply(helpers.weights_init_kaiming)
 # Loss function and regularizers
 criterion = nn.MSELoss(size_average=False)
 
@@ -112,8 +111,9 @@ def train(epoch, ttot):
 		x, y = x.to(device), y.to(device)
 
 		optimizer.zero_grad()
+		model.zero_grad()
 		y_hat = model(x)
-		loss = criterion(y_hat, y) / (x.size(0)*2)
+		loss = criterion(y_hat, noise.to(device)) / (x.size(0)*2)
 
 
 		if np.isnan(loss.data.item()):
@@ -127,7 +127,7 @@ def train(epoch, ttot):
 		# measure performance and record loss
 		model.eval()
 		y_tilde = model(x)
-		y_tilde = torch.clamp(y_tilde, 0., 1.)
+		y_tilde = torch.clamp(x-y_tilde, 0., 1.)
 		l_measure = batch_SNR(y_tilde, y, 1.) if args.snr else batch_PSNR(y_tilde, y, 1.)
 		el_measure.update(l_measure, y.size(0))
 		el_loss.update(loss.data.item(), y.size(0))
@@ -202,9 +202,9 @@ def test(epoch, ttot):
 
 			x, y = x.to(device), y.to(device)
 			y_tilde = model(x)
-			loss = criterion(y_tilde, y) / (x.size(0)*2)
+			loss = criterion(y_tilde, noise.to(device)) / (x.size(0)*2)
 
-			y_tilde = torch.clamp(y_tilde, 0., 1.)
+			y_tilde = torch.clamp(x-y_tilde, 0., 1.)
 			l_measure = batch_SNR(y_tilde, y, 1.) if args.snr else batch_PSNR(y_tilde, y, 1.)
 			test_loss.update(loss.data.item(), y.size(0))
 			test_measure.update(l_measure, y.size(0))

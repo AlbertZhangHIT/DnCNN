@@ -15,9 +15,10 @@ from torch.utils.data import DataLoader
 import utils.mytransform as mtf
 from utils.measure import batch_PSNR, batch_SNR
 from utils.meter import AverageMeter
-from utils.functional import loadModel
-from utils.imgdataset import ImageDatasetFromFolder
+from _helpers import loadModel
+from utils.imgdataset import ImageDatasetFromFolder, pil_loader
 from utils.dataset import DatasetFromH5PY
+from models import *
 
 parser = argparse.ArgumentParser('Test for DnCNN in PyTorch')
 parser.add_argument("--dataset", type=str, default="")
@@ -25,7 +26,7 @@ parser.add_argument("--imgfile", action='store_true', help='whether the test dat
 parser.add_argument("--test-batch-size", type=int, default=1)
 parser.add_argument("--blind", action='store_true', help='Blind denoising')
 parser.add_argument("--add-noise", action='store_true', help='Add noise')
-parser.add_argument("--noise-level", type=float, default=0, hlep='noise level')
+parser.add_argument("--noise-level", type=float, default=0, help='noise level')
 parser.add_argument("--snr", action='store_true', help='measure method, default psnr')
 parser.add_argument("--checkpoint", type=str, default="")
 parser.add_argument("--cuda", action='store_true')
@@ -39,44 +40,31 @@ group1.add_argument('--kernel-size', type=int, default=3, help='kernel size, def
 blind_noise = [0, 55]
 args = parser.parse_args()
 args.has_cuda = torch.cuda.is_available()
-device = 'cuda' (args.cuda and args.has_cuda) else 'cpu'
+device = 'cuda' if (args.cuda and args.has_cuda) else 'cpu'
 
 # Initialize model
 model = DnCNN(args.depth, args.n_channels, args.img_channels, args.kernel_size)
-model = loadModel(model, device, args.checkpoint)
-# checkpoint = torch.load(args.checkpoint)['state_dict']
-# if device == 'cuda':
-# 	device_ids = [0]
-# 	model = nn.DataParallel(model, device_ids=device_ids)
-# 	cudnn.benchmark = True
-# 	model.load_state_dict(checkpoint)
-# else:
-# 	from collections import OrderedDict
-# 	new_state_dict = OrderedDict()
-# 	for k, v in checkpoint.items():
-# 		name = k[7:]
-# 		new_state_dict[name] = v
-# 	model.load_state_dict(new_state_dict)
+model = loadModel(model, device, args.checkpoint).to(device)
 
 
 if os.path.isdir(args.dataset) and args.imgfile:
 	try:
-		test_set = ImageDatasetFromFolder(args.dataset, transform=tf.ToTensor())
+		test_set = ImageDatasetFromFolder(args.dataset, transform=tf.ToTensor(), loader=pil_loader('L'))
 	except:
-		print("Please ensure the dataset path are a folder containing image files.")
+		raise Exception("Please ensure the dataset path are a folder containing image files.")
 		
 if os.path.isfile(args.dataset) and not args.imgfile:
 	try:
 		test_set = DatasetFromH5PY(args.dataset, mtf.ToTensor(), mtf.ToTensor(255))
 	except:
-		print("Only files in .h5 format are supported.")
+		raise Exception("Only files in .h5 format are supported.")
 
 
 
 test_loader = DataLoader(dataset=test_set, num_workers=1, batch_size=1, shuffle=False)
 test_bar = tqdm(enumerate(test_loader, 1))
 
-
+model.eval()
 with torch.no_grad():	
 	test_measure = AverageMeter()
 	start_time = time.time()
@@ -115,4 +103,4 @@ with torch.no_grad():
 				mvalue=test_measure,
 			))
 elapsed_time = time.time() - start_time
-print("Elapsed time: {.2f} s, Average Measure: {.3f} dB".format(elapsed_time, test_measure.avg))
+print("Elapsed time: {:.2f} s, Average Measure: {:.3f} dB".format(elapsed_time, test_measure.avg))

@@ -11,7 +11,7 @@ class convBlock(nn.Module):
 		super().__init__()
 		self.conv = conv(in_channel, out_channel, kernel_size, stride, dilation, bias)
 		self.nonlinear = nn.ReLU(inplace=True) if nonlinear else None
-		self.bn = nn.BatchNorm2d(out_channel) if bn else None
+		self.bn = nn.BatchNorm2d(out_channel, eps=0.0001, momentum=0.95) if bn else None
 
 	def forward(self, x):
 		out = self.conv(x)
@@ -31,12 +31,11 @@ class DnCNN(nn.Module):
 		self.image_channels = image_channels
 
 		self.dncnn = self._make_layers()
-		self._initialize_weights()
+		#self._initialize_weights()
 
 	def forward(self, x):
-		y = x
 		out = self.dncnn(x)
-		return y - out
+		return out
 
 	def _make_layers(self):
 		layers = []
