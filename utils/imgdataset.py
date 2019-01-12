@@ -133,7 +133,7 @@ def img2patch(imgFile, patchSize, stride, augTimes=0, rescale=[1, 0.9, 0.8, 0.7]
     patch = []
     for s in rescale:
         hScaled, wScaled = int(h*s), int(w*s)
-        imgScaled = Image.resize(img, (hScaled, wScaled), resample=Image.BICUBIC)
+        imgScaled = img.resize((hScaled, wScaled), resample=Image.BICUBIC)
         for i in range(0, hScaled-patchSize+1, stride):
             for j in range(0, wScaled-patchSize+1, stride):
                 x = imgScaled.crop((i, j, i+patchSize, j+patchSize))
@@ -165,12 +165,12 @@ class PatchFromImageFolder(udata.Dataset):
             h, w = img.size
             for s in self.rescale:
                 hScaled, wScaled = int(h*s), int(w*s)
-                imgScaled = Image.resize(img, (hScaled, wScaled), resample=Image.BICUBIC)
+                imgScaled = img.resize((hScaled, wScaled), resample=Image.BICUBIC)
                 for i in range(0, hScaled-self.patchSize+1, self.stride):
                     for j in range(0, wScaled-self.patchSize+1, self.stride):
                         x = imgScaled.crop((i, j, i+self.patchSize, j+self.patchSize))
                         for k in range(0, self.augTimes):
-                            x = img_aug(x, np.random.randint(0, 8))
+                            x = pil_aug(x, np.random.randint(0, 8))
                             patches.append(x)
         return patches       
 

@@ -18,6 +18,7 @@ from _parsers import parser
 import utils.mytransform as mtf
 import utils.visual as visual
 from utils.dataset import DatasetFromH5PY
+from utils.imgdataset import PatchFromImageFolder, pil_loader
 from utils.measure import batch_PSNR, batch_SNR
 from utils.meter import AverageMeter
 from models import *
@@ -45,9 +46,13 @@ for p in vars(args).items():
 print('\n')
 
 # Data loaders
-data_set = DatasetFromH5PY(args.dataset_train, 
+try:
+	data_set = DatasetFromH5PY(args.dataset_train, 
 					mtf.Compose([mtf.ToTensor(255)]), 
 					mtf.Compose([mtf.ToTensor(255)]))
+except:
+	data_set = PatchFromImageFolder(args.dataset_train, loader=pil_loader('L'),
+		transform=tf.ToTensor(), patchSize=40, stride=40, augTimes=1)
 numValSamples = math.floor(len(data_set)*0.1)
 val_set, train_set = random_split(data_set, [numValSamples, len(data_set)-numValSamples])
 train_loader = DataLoader(dataset=train_set, num_workers=args.data_workers, batch_size=args.batch_size, shuffle=True)

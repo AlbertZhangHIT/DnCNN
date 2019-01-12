@@ -87,7 +87,7 @@ with torch.no_grad():
 
 		x, y = x.to(device), y.to(device)
 
-		y_hat = model(x).clamp(0., 1.)
+		y_hat = (x-model(x)).clamp(0., 1.)
 		l_measure = batch_SNR(y_hat, y, 1.) if args.snr else batch_PSNR(y_hat, y, 1.)
 		test_measure.update(l_measure, y.size(0))
 
