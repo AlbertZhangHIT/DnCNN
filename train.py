@@ -64,8 +64,10 @@ training_logger, testing_logger = helpers.loggers(args)
 # Initialize model
 model = DnCNN(args.depth, args.n_channels, args.img_channels, args.kernel_size)
 model.apply(helpers.weights_init_kaiming)
+numParams = helpers.countParam(model)
+print("numParameters: %d"%(numParams))
 # Loss function and regularizers
-criterion = nn.MSELoss(size_average=False)
+criterion = nn.MSELoss(reduction='sum')
 
 # Move to device
 criterion = criterion.to(device)
