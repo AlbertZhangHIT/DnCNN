@@ -7,8 +7,6 @@ import h5py
 import torch
 import cv2
 import torch.utils.data as udata
-from . import functional as F
-
 
 
 class DatasetFromH5PY(udata.Dataset):
